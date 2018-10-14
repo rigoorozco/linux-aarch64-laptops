@@ -15,6 +15,7 @@
 #include <asm/efi.h>
 
 #include "efistub.h"
+#include "sdm850_fixup.h"
 
 #define EFI_DT_ADDR_CELLS_DEFAULT 2
 #define EFI_DT_SIZE_CELLS_DEFAULT 2
@@ -326,6 +327,62 @@ efi_status_t allocate_new_fdt_and_exit_boot(efi_system_table_t *sys_table,
 
 	if (status == EFI_SUCCESS) {
 		efi_set_virtual_address_map_t *svam;
+
+		/*
+		 * SDM850 has several bugs in it's UEFI which cause issues
+		 * for non-Windows:
+		 *
+		 * 1. The .text offset in the PE32+ header of the loaded
+		 *    .efi must be 4k aligned.  If it is not aligned, the UEFI
+		 *    does not properly adjust the address when making the
+		 *    MMU mappings, which triggers an assert in the UEFI MMU
+		 *    driver.
+		 * 2. During set_virtual_address_map() processing in UEFI,
+		 *    ResetSystemLib converts the UEFI internal global pointer
+		 *    to the runtime services to the provided virtual address
+		 *    map.  Later, TimetickRunTime attempts to use that global
+		 *    pointer to convert its internal data structures.  If the
+		 *    virtual address are not properly configured in the MMU,
+		 *    this causes a fault in the MMU.  This violates the UEFI
+		 *    spec because while UEFI no longer has ownership of the MMU
+		 *    after exit_boot_services(), it cannot assume the loader/OS
+		 *    has taken ownership and configured the MMU at the time of
+		 *    set_virtual_address_map().
+		 * 3. During set_virtual_address_map() processing in UEFI,
+		 *    runtime images needs to be relocated to their new location
+		 *    in the memory map.  UEFI applies strict permissions to
+		 *    memory pages in the MMU - code pages are readonly with
+		 *    execute, where as data pages are read/write with
+		 *    no-execute.  This causes a MMU fault when code pages are
+		 *    patched to accomidate the relocation.  This violates the
+		 *    UEFI spec for the same reasons as issue #2.
+		 *
+		 * Luckily we can work around these issues.
+		 *
+		 * We cannot do anything about issue #1 here.  We need to ensure
+		 * the compiler sets the .text offset to a 4k aligned location.
+		 * So far, this issue has not been observed to affect the EFI
+		 * stub, but does cause problems for GRUB.
+		 *
+		 * We can workaround issues #2 and #3 here.  At this point in
+		 * the Windows boot process, Windows reinit's the MMU, and marks
+		 * all relevant pages as R/W/X and maps the virtual address
+		 * space for runtime services.  We can do something similar here
+		 * by tweaking the MMU just enough to be close enough to the
+		 * Windows behavior to allow set_virtual_address_map() to
+		 * complete cleanly and allow us to get into the Linux Kernel
+		 * where proper MMU handling will take over.
+		 *
+		 * We are going to go through the memory map, and for runtime
+		 * code/data pages, open up the permissions and map the virtual
+		 * addresses.  This is a quick and dirty workaround, with the
+		 * minimal MMU handling necessary to accomplish the goal.  We
+		 * don't want re-implement the entire Linux MM subsystem for
+		 * some silly FW bugs, particularly since everything we do here
+		 * is going to be overridden by the proper Linux kernel.
+		 */
+		do_sdm850_uefi_workaround(memory_map, runtime_map, map_size,
+					  desc_size, runtime_entry_count);
 
 		/* Install the new virtual address map */
 		svam = sys_table->runtime->set_virtual_address_map;
