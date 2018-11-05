@@ -259,3 +259,21 @@
 	pinctrl-0 = <&sdc2_clk_on  &sdc2_cmd_on  &sdc2_data_on  &sdc2_cd_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
 };
+
+&i2c6 {
+/*
+        keyboard@3a {
+                compatible = "elan,ekth3000";
+                interrupt-parent = <&tlmm>;
+                interrupts = <0x79 IRQ_TYPE_LEVEL_LOW>;
+                reg = <0x3a>;
+        };
+*/
+        keyboard@3a {
+                compatible = "hid-over-i2c";
+                interrupt-parent = <&tlmm>;
+                interrupts = <0x79 IRQ_TYPE_LEVEL_LOW>;
+                reg = <0x3a>;
+                hid-descr-addr = <0x0001>;
+        };
+};
