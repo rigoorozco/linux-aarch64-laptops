@@ -1171,8 +1171,6 @@ static const struct qmp_phy_cfg msm8998_usb3phy_cfg = {
 	.mask_pcs_ready         = PHYSTATUS,
 
 	.is_dual_lane_phy       = true,
-	.tx_b_lane_offset       = 0x400,
-	.rx_b_lane_offset       = 0x400,
 };
 
 static void qcom_qmp_phy_configure(void __iomem *base,
