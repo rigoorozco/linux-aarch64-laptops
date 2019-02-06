@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2019, The Linux Foundation. All rights reserved. */
+
+/dts-v1/;
+
+#include "msm8998-mtp.dtsi"
+
+&rpm_requests {
+	pm8998-regulators {
+		compatible = "qcom,rpm-pm8998-regulators";
+
+		vdd_l9-supply = <&vph_pwr>;
+		vdd_l10_l23_l25-supply = <&vph_pwr>;
+		vdd_l13_l19_l21-supply = <&vph_pwr>;
+		vdd_l16_l28-supply = <&vph_pwr>;
+		vdd_l18_l22-supply = <&vph_pwr>;
+		vdd_l20_l24-supply = <&vph_pwr>;
+	};
+
+	pmi8998-regulators {
+		compatible = "qcom,rpm-pmi8998-regulators";
+		status = "disabled";
+	};
+};

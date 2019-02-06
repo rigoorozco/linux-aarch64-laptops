@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2019, The Linux Foundation. All rights reserved. */
+
+/dts-v1/;
+
+#include "laptop-common.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM8998 v1 HP Envy X2";
+	compatible = "qcom,msm8998-hp-envy-x2";
+
+	qcom,board-id = <8 0>;
+};
+
+&sdhc2 {
+	cd-gpios = <&tlmm 95 GPIO_ACTIVE_LOW>;
+};
+
+&blsp1_i2c6 {
+	status = "okay";
+
+	keyboard@3a {
+		compatible = "hid-over-i2c";
+		interrupt-parent = <&tlmm>;
+		interrupts = <0x79 IRQ_TYPE_LEVEL_LOW>;
+		reg = <0x3a>;
+		hid-descr-addr = <0x0001>;
+	};
+};
