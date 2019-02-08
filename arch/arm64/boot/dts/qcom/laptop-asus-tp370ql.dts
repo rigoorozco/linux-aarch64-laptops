@@ -12,6 +12,15 @@
 	qcom,board-id = <8 0>;
 };
 
+&tlmm {
+	touchpad: touchpad {
+		config {
+			pins = "gpio123";
+			bias-pull-up;           /* pull up */
+		};
+	};
+};
+
 &sdhc2 {
 	cd-gpios = <&tlmm 95 GPIO_ACTIVE_HIGH>;
 };
@@ -33,5 +42,8 @@
 		interrupts = <0x7b IRQ_TYPE_LEVEL_LOW>;
 		reg = <0x15>;
 		hid-descr-addr = <0x0001>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&touchpad>;
 	};
 };
