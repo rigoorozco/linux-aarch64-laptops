@@ -9,6 +9,8 @@
 	pm8998-regulators {
 		compatible = "qcom,rpm-pm8998-regulators";
 
+		status = "okay";
+
 		vdd_l9-supply = <&vph_pwr>;
 		vdd_l10_l23_l25-supply = <&vph_pwr>;
 		vdd_l13_l19_l21-supply = <&vph_pwr>;
