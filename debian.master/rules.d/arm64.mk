@@ -15,8 +15,8 @@ vdso		= vdso_install
 do_extras_package = true
 do_tools_usbip  = true
 do_tools_cpupower = true
-do_tools_perf   = true
-do_tools_perf_jvmti = true
+do_tools_perf   = false
+do_tools_perf_jvmti = false
 
 do_dtbs		= true
 do_zfs		= true
