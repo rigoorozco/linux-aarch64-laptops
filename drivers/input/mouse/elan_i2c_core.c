@@ -1332,6 +1332,10 @@ static const struct i2c_device_id elan_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, elan_id);
 
+/*
+ * when these whtielists get updated, the corresponding blacklist in hid-quirks
+ * needs to be updated to match.
+ */
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id elan_acpi_id[] = {
 	{ "ELAN0000", 0 },
