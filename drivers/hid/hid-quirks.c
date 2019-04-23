@@ -987,17 +987,61 @@ bool hid_ignore(struct hid_device *hdev)
 		break;
 	case USB_VENDOR_ID_ELAN:
 		/*
-		 * Many Elan devices have a product id of 0x0401 and are handled
-		 * by the elan_i2c input driver. But the ACPI HID ELAN0800 dev
-		 * is not (and cannot be) handled by that driver ->
-		 * Ignore all 0x0401 devs except for the ELAN0800 dev.
+		 * Blacklist of everything that gets handled by the elan_i2c
+		 * input driver.  This should be kept in sync with the whitelist
+		 * that exists in that driver.  This avoids disabling valid
+		 * touchpads and other ELAN devices.
 		 */
-		if (hdev->product == 0x0401 &&
-		    strncmp(hdev->name, "ELAN0800", 8) != 0)
-			return true;
-		/* Same with product id 0x0400 */
-		if (hdev->product == 0x0400 &&
-		    strncmp(hdev->name, "QTEC0001", 8) != 0)
+		if ((hdev->product == 0x0401 || hdev->product == 0x0400) &&
+		   (strncmp(hdev->name, "ELAN0000", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0100", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0600", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0601", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0602", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0603", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0604", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0605", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0606", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0607", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0608", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0609", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN060B", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN060C", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN060F", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0610", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0611", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0612", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0613", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0614", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0615", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0616", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0617", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0618", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0619", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061A", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061B", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061C", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061D", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061E", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN061F", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0620", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0621", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0622", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0623", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0624", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0625", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0626", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0627", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0628", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0629", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN062A", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN062B", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN062C", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN062D", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0631", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN0632", 8) == 0 ||
+		    strncmp(hdev->name, "ELAN1000", 8) == 0 ||
+		    strncmp(hdev->name, "elan,ekth3000", 13) == 0))
 			return true;
 		break;
 	}
