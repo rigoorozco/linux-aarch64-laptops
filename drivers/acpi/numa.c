@@ -436,8 +436,10 @@ int __init acpi_numa_init(void)
 {
 	int cnt = 0;
 
-	if (acpi_disabled)
+	if (acpi_disabled) {
+		printk("LEE: %s: ACPI Disabled\n", __func__);
 		return -EINVAL;
+	}
 
 	/*
 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
@@ -463,15 +465,20 @@ int __init acpi_numa_init(void)
 
 		cnt = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
 					    acpi_parse_memory_affinity, 0);
-	}
+	} else
+		printk("LEE: %s: No ACPI_SIG_SRAT found\n", __func__);
+
 
 	/* SLIT: System Locality Information Table */
 	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
 
-	if (cnt < 0)
+	if (cnt < 0) {
+		printk("LEE: %s: Failed to parse SRAT\n", __func__);
 		return cnt;
-	else if (!parsed_numa_memblks)
+	} else if (!parsed_numa_memblks) {
+		printk("LEE: %s: No NUMA memblks parsed\n", __func__);
 		return -ENOENT;
+	}
 	return 0;
 }
 

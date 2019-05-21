@@ -317,8 +317,12 @@ static int i2c_device_probe(struct device *dev)
 	struct i2c_driver	*driver;
 	int status;
 
-	if (!client)
+	printk("LEE: %s: ------------ Trying to probe: %s\n", __func__, dev_name(dev));
+
+	if (!client) {
+		printk("LEE: %s: No client\n", __func__);
 		return 0;
+	}
 
 	driver = to_i2c_driver(dev->driver);
 
@@ -335,15 +339,19 @@ static int i2c_device_probe(struct device *dev)
 			if (irq == -EINVAL || irq == -ENODATA)
 				irq = of_irq_get(dev->of_node, 0);
 		} else if (ACPI_COMPANION(dev)) {
+			printk("LEE: %s: Doing ACPI\n", __func__);
 			irq = acpi_dev_gpio_irq_get(ACPI_COMPANION(dev), 0);
 		}
-		if (irq == -EPROBE_DEFER)
+		if (irq == -EPROBE_DEFER) {
+			printk("LEE: %s: Deferring probe\n", __func__);
 			return irq;
+		}
 
 		if (irq < 0)
 			irq = 0;
 
 		client->irq = irq;
+		printk("LEE: %s: IRQ: %d\n", __func__, irq);
 	}
 
 	/*
@@ -352,8 +360,10 @@ static int i2c_device_probe(struct device *dev)
 	 */
 	if (!driver->id_table &&
 	    !i2c_acpi_match_device(dev->driver->acpi_match_table, client) &&
-	    !i2c_of_match_device(dev->driver->of_match_table, client))
+	    !i2c_of_match_device(dev->driver->of_match_table, client)) {
+		printk("LEE: %s: No match found\n", __func__);
 		return -ENODEV;
+	}
 
 	if (client->flags & I2C_CLIENT_WAKE) {
 		int wakeirq = -ENOENT;
@@ -380,12 +390,19 @@ static int i2c_device_probe(struct device *dev)
 	dev_dbg(dev, "probe\n");
 
 	status = of_clk_set_defaults(dev->of_node, false);
-	if (status < 0)
+	if (status < 0) {
+		printk("LEE: %s: Failed clocks\n", __func__);
 		goto err_clear_wakeup_irq;
+	}
 
 	status = dev_pm_domain_attach(&client->dev, true);
-	if (status)
+	if (status) {
+		printk("LEE: %s: Failed to attach PM domain\n", __func__);
 		goto err_clear_wakeup_irq;
+	}
+
+	printk("LEE: %s: Probing: (probe_new) %p (probe) %p\n",
+	       __func__, driver->probe_new, driver->probe);
 
 	/*
 	 * When there are no more users of probe(),
@@ -399,8 +416,10 @@ static int i2c_device_probe(struct device *dev)
 	else
 		status = -EINVAL;
 
-	if (status)
+	if (status) {
+		printk("LEE: %s: Failed to probe\n", __func__);
 		goto err_detach_pm_domain;
+	}
 
 	return 0;
 
