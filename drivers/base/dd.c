@@ -819,9 +819,6 @@ static int __device_attach(struct device *dev, bool allow_async)
 	int ret = 0;
 
 	device_lock(dev);
-
-	printk("LEE: %s: Attaching: %s\n", __func__, dev_name(dev));
-
 	if (dev->driver) {
 		if (device_is_bound(dev)) {
 			ret = 1;
@@ -1036,21 +1033,8 @@ static int __driver_attach(struct device *dev, void *data)
  * returns 0 and the @dev->driver is set, we've found a
  * compatible pair.
  */
-static int lee_print_devs(struct device *dev, void *data)
-{
-	printk("LEE: %s: DEVICES: %s\n", __func__, dev_name(dev));
-	return 0;
-}
-
 int driver_attach(struct device_driver *drv)
 {
-	static bool doonce = true;
-
-	if (doonce) {
-		bus_for_each_dev(drv->bus, NULL, drv, lee_print_devs);
-		doonce = false;
-	}
-
 	return bus_for_each_dev(drv->bus, NULL, drv, __driver_attach);
 }
 EXPORT_SYMBOL_GPL(driver_attach);

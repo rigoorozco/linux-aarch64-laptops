@@ -172,7 +172,7 @@ out:
 	 * should be released after parsing and before resuming boot
 	 */
 	acpi_put_table(table);
-	return 0; // LEE: ret;
+	return ret;
 }
 
 /*

@@ -152,30 +152,22 @@ static int i2c_acpi_get_info(struct acpi_device *adev,
 	lookup.index = -1;
 
 	ret = i2c_acpi_do_lookup(adev, &lookup);
-	if (ret) {
-// BUSY		printk("LEE: %s: Failed I2C ACPI lookup\n", __func__);
+	if (ret)
 		return ret;
-	}
 
 	if (adapter) {
 		/* The adapter must match the one in I2cSerialBus() connector */
-		if (ACPI_HANDLE(&adapter->dev) != lookup.adapter_handle) {
-			printk("LEE: %s: Failed to match I2cSerialBus() connector\n", __func__);
+		if (ACPI_HANDLE(&adapter->dev) != lookup.adapter_handle)
 			return -ENODEV;
-		}
 	} else {
 		struct acpi_device *adapter_adev;
 
 		/* The adapter must be present */
-		if (acpi_bus_get_device(lookup.adapter_handle, &adapter_adev)) {
-			printk("LEE: %s: Failed to get ACPI bus device\n", __func__);
+		if (acpi_bus_get_device(lookup.adapter_handle, &adapter_adev))
 			return -ENODEV;
-		}
 		if (acpi_bus_get_status(adapter_adev) ||
-		    !adapter_adev->status.present) {
-			printk("LEE: %s: Adaptor is not presetn\n", __func__);
+		    !adapter_adev->status.present)
 			return -ENODEV;
-		}
 	}
 
 	info->fwnode = acpi_fwnode_handle(adev);
@@ -185,10 +177,8 @@ static int i2c_acpi_get_info(struct acpi_device *adev,
 	/* Then fill IRQ number if any */
 	INIT_LIST_HEAD(&resource_list);
 	ret = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
-	if (ret < 0) {
-		printk("LEE: %s: Failed to get resources\n", __func__);
+	if (ret < 0)
 		return -EINVAL;
-	}
 
 	resource_list_for_each_entry(entry, &resource_list) {
 		if (resource_type(entry->res) == IORESOURCE_IRQ) {
@@ -226,23 +216,12 @@ static acpi_status i2c_acpi_add_device(acpi_handle handle, u32 level,
 	struct i2c_adapter *adapter = data;
 	struct acpi_device *adev;
 	struct i2c_board_info info;
-	bool it = false;
 
 	if (acpi_bus_get_device(handle, &adev))
 		return AE_OK;
 
-	if (adev && !strncmp("ENES6243", dev_name(&adev->dev), 8)) {
-		it = true;
-		printk("LEE: %s: Found device: %s\n", __func__, adev ? dev_name(&adev->dev) :  "NULL");
-	}
-	
-	if (i2c_acpi_get_info(adev, &info, adapter, NULL)) {
-		if (it)
-			printk("LEE: %s: Failed to get I2C info\n", __func__);
+	if (i2c_acpi_get_info(adev, &info, adapter, NULL))
 		return AE_OK;
-	}
-
-	printk("LEE: %s: Registering: %s\n", __func__, adev ? dev_name(&adev->dev) :  "NULL");
 
 	i2c_acpi_register_device(adapter, adev, &info);
 
@@ -263,10 +242,8 @@ void i2c_acpi_register_devices(struct i2c_adapter *adap)
 {
 	acpi_status status;
 
-	if (!has_acpi_companion(&adap->dev)) {
-		printk("LEE: %s: I2C Adaptor has no companion\n", __func__);
+	if (!has_acpi_companion(&adap->dev))
 		return;
-	}
 
 	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
 				     I2C_ACPI_MAX_SCAN_DEPTH,

@@ -624,7 +624,7 @@ int bus_add_driver(struct device_driver *drv)
 	if (!bus)
 		return -EINVAL;
 
-	printk("LEE: %s: bus: '%s': add driver %s\n", __func__, bus->name, drv->name);
+	pr_debug("bus: '%s': add driver %s\n", bus->name, drv->name);
 
 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
 	if (!priv) {
@@ -642,7 +642,6 @@ int bus_add_driver(struct device_driver *drv)
 
 	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
 	if (drv->bus->p->drivers_autoprobe) {
-		printk("LEE: %s: bus: '%s': attaching driver %s\n", __func__, bus->name, drv->name);
 		error = driver_attach(drv);
 		if (error)
 			goto out_unregister;

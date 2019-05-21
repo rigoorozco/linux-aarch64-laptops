@@ -744,52 +744,24 @@ static bool __acpi_match_device(struct acpi_device *device,
 {
 	const struct acpi_device_id *id;
 	struct acpi_hardware_id *hwid;
-	bool it = false;
 
 	/*
 	 * If the device is not present, it is unnecessary to load device
 	 * driver for it.
 	 */
-	if (!device || !device->status.present) {
-//		printk("LEE: %s: Device: %s NOT PRESENT\n", __func__, dev_name(&device->dev));
+	if (!device || !device->status.present)
 		return false;
-	}
 
 	list_for_each_entry(hwid, &device->pnp.ids, list) {
 		/* First, check the ACPI/PNP IDs provided by the caller. */
 		if (acpi_ids) {
-/*
-			it = false;
-			if (dev_name(&device->dev) && hwid->id) {
-				if (!strncmp(dev_name(&device->dev), "PNP0C50", 7) ||
-				    !strncmp(hwid->id, "PNP0C50", 7) ||
-				    !strncmp(dev_name(&device->dev), "ACPI0C50", 8) ||
-				    !strncmp(hwid->id, "ACPI0C50", 8)) {
-					printk("LEE: %s: Device: %s\n",
-					       __func__, dev_name(&device->dev));
-					it = true;
-				}
-			} else
-				printk("LEE: %s: CRASH: Device Name: %s HW ID: %s\n", __func__,
-				       dev_name(&device->dev), hwid->id);
-*/				
 			for (id = acpi_ids; id->id[0] || id->cls; id++) {
-/*
-				if (it)
-					printk("LEE: %s: Driver ID: %s <=> %s (cls: %d)\n",
-					       __func__, (char *)id->id, hwid->id, id->cls);
-*/
 				if (id->id[0] && !strcmp((char *)id->id, hwid->id))
 					goto out_acpi_match;
 				if (id->cls && __acpi_match_device_cls(id, hwid))
 					goto out_acpi_match;
 			}
 		}
-/*
-		else
-			printk("LEE: %s: No ACPI IDs for Device: %s\n",
-			       __func__, dev_name(&device->dev));
-*/
 
 		/*
 		 * Next, check ACPI_DT_NAMESPACE_HID and try to match the
@@ -803,12 +775,6 @@ static bool __acpi_match_device(struct acpi_device *device,
 out_acpi_match:
 	if (acpi_id)
 		*acpi_id = id;
-
-	printk("LEE: %s: MATCH Driver ID: %s <=> %s (cls: %d)\n",
-	       __func__, (char *)id->id, hwid->id, id->cls);
-
-//	dump_stack();
-
 	return true;
 }
 
@@ -869,43 +835,10 @@ EXPORT_SYMBOL(acpi_match_device_ids);
 bool acpi_driver_match_device(struct device *dev,
 			      const struct device_driver *drv)
 {
-	struct acpi_device *device = acpi_companion_match(dev);
-	const struct acpi_device_id *id;
-	struct acpi_hardware_id *hwid;
-	bool it = false;
-
-//	printk("LEE: %s: Trying to match driver %s with device %s\n",
-//	       __func__, drv->name, dev_name(dev));
-	
-	if (drv->name && !strncmp(drv->name, "i2c_hid", 7)) {
-		it = true;
-		printk("LEE: %s: HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE\n", __func__);
-
-		if (device) {
-			if (!drv->acpi_match_table->id[0])
-				printk("LEE: %s: No ACPI match table\n", __func__);
-
-			for (id = drv->acpi_match_table; id->id[0]; id++)
-				printk("LEE: %s: Driver Match ID: %s\n", __func__, (char *)id->id);
-
-			if (list_empty(&device->pnp.ids))
-				printk("LEE: %s: No Devices listed\n", __func__);
-
-			list_for_each_entry(hwid, &device->pnp.ids, list)
-				printk("LEE: %s: Device name: %s Device HW ID: %s\n",
-				       __func__, dev_name(dev), hwid->id);
-		} else
-			printk("LEE: %s: No ACPI device\n", __func__);
-	}
-
-	if (!drv->acpi_match_table) {
-		if (it)
-			printk("LEE: %s: No ACPI match table found\n", __func__);
-
+	if (!drv->acpi_match_table)
 		return acpi_of_match_device(ACPI_COMPANION(dev),
 					    drv->of_match_table,
 					    NULL);
-	}
 
 	return __acpi_match_device(acpi_companion_match(dev),
 				   drv->acpi_match_table, drv->of_match_table,
