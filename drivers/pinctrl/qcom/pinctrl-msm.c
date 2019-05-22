@@ -899,6 +899,8 @@ static int msm_gpio_irq_reqres(struct irq_data *d)
 	struct msm_pinctrl *pctrl = gpiochip_get_data(gc);
 	int ret;
 
+	printk("LEE: %s\n", __func__);
+
 	if (!try_module_get(gc->owner))
 		return -ENODEV;
 
@@ -973,6 +975,8 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
 	int ret;
 	unsigned ngpio = pctrl->soc->ngpios;
 
+	printk("LEE: %s: Enter\n", __func__);
+
 	if (WARN_ON(ngpio > MAX_NR_GPIO))
 		return -EINVAL;
 
@@ -1034,6 +1038,8 @@ static int msm_gpio_init(struct msm_pinctrl *pctrl)
 	gpiochip_set_chained_irqchip(chip, &pctrl->irq_chip, pctrl->irq,
 				     msm_gpio_irq_handler);
 
+	printk("LEE: %s: LEAVE\n", __func__);
+
 	return 0;
 }
 
@@ -1042,6 +1048,7 @@ static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
 {
 	struct msm_pinctrl *pctrl = container_of(nb, struct msm_pinctrl, restart_nb);
 
+	printk("LEE: %s\n", __func__);
 	writel(0, pctrl->regs[0] + PS_HOLD_OFFSET);
 	mdelay(1000);
 	return NOTIFY_DONE;
@@ -1051,6 +1058,7 @@ static struct msm_pinctrl *poweroff_pctrl;
 
 static void msm_ps_hold_poweroff(void)
 {
+	printk("LEE: %s\n", __func__);
 	msm_ps_hold_restart(&poweroff_pctrl->restart_nb, 0, NULL);
 }
 
@@ -1059,6 +1067,7 @@ static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
 	int i;
 	const struct msm_function *func = pctrl->soc->functions;
 
+	printk("LEE: %s\n", __func__);
 	for (i = 0; i < pctrl->soc->nfunctions; i++)
 		if (!strcmp(func[i].name, "ps_hold")) {
 			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
@@ -1099,6 +1108,8 @@ int msm_pinctrl_probe(struct platform_device *pdev,
 	int ret;
 	int i;
 
+	printk("LEE: %s: Enter\n", __func__);
+
 	pctrl = devm_kzalloc(&pdev->dev, sizeof(*pctrl), GFP_KERNEL);
 	if (!pctrl)
 		return -ENOMEM;
@@ -1120,17 +1131,22 @@ int msm_pinctrl_probe(struct platform_device *pdev,
 	} else {
 		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		pctrl->regs[0] = devm_ioremap_resource(&pdev->dev, res);
-		if (IS_ERR(pctrl->regs[0]))
+		if (IS_ERR(pctrl->regs[0])) {
+			printk("LEE: %s: Failed to get memory resource\n", __func__);
 			return PTR_ERR(pctrl->regs[0]);
+		}
 	}
 
+	printk("LEE: %s: Before Reset\n", __func__);
 	msm_pinctrl_setup_pm_reset(pctrl);
+	printk("LEE: %s: After Reset\n", __func__);
 
 	pctrl->irq = platform_get_irq(pdev, 0);
 	if (pctrl->irq < 0) {
 		dev_err(&pdev->dev, "No interrupt defined for msmgpio\n");
 		return pctrl->irq;
 	}
+	printk("LEE: %s: Got IRQ: %d\n", __func__, pctrl->irq);
 
 	pctrl->desc.owner = THIS_MODULE;
 	pctrl->desc.pctlops = &msm_pinctrl_ops;
@@ -1152,7 +1168,7 @@ int msm_pinctrl_probe(struct platform_device *pdev,
 
 	platform_set_drvdata(pdev, pctrl);
 
-	dev_dbg(&pdev->dev, "Probed Qualcomm pinctrl driver\n");
+	dev_err(&pdev->dev, "LEE: Leave: Probed Qualcomm pinctrl driver\n");
 
 	return 0;
 }

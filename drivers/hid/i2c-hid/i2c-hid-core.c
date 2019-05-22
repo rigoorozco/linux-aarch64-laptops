@@ -67,8 +67,8 @@ MODULE_PARM_DESC(debug, "print a lot of debug information");
 
 #define i2c_hid_dbg(ihid, fmt, arg...)					  \
 do {									  \
-	if (debug)							  \
-		dev_printk(KERN_DEBUG, &(ihid)->client->dev, fmt, ##arg); \
+	if (1)							  \
+		dev_printk(KERN_ERR, &(ihid)->client->dev, fmt, ##arg); \
 } while (0)
 
 struct i2c_hid_desc {
@@ -522,7 +522,7 @@ static void i2c_hid_get_input(struct i2c_hid *ihid)
 		return;
 	}
 
-	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
+//	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
 
 	if (test_bit(I2C_HID_STARTED, &ihid->flags))
 		hid_input_report(ihid->hid, HID_INPUT_REPORT, ihid->inbuf + 2,
@@ -953,6 +953,8 @@ static int i2c_hid_acpi_pdata(struct i2c_client *client,
 	}
 
 	pdata->hid_descriptor_address = obj->integer.value;
+	printk("LEEEEEEEEEEEEEEEEE: %s: HID desc address: %lld", __func__, obj->integer.value);
+
 	ACPI_FREE(obj);
 
 	return 0;
@@ -969,6 +971,7 @@ static void i2c_hid_acpi_fix_up_power(struct device *dev)
 
 static const struct acpi_device_id i2c_hid_acpi_match[] = {
 	{"ACPI0C50", 0 },
+//	{"ENES6243", 0 },
 	{"PNP0C50", 0 },
 	{ },
 };
@@ -1038,7 +1041,8 @@ static int i2c_hid_probe(struct i2c_client *client,
 	__u16 hidRegister;
 	struct i2c_hid_platform_data *platform_data = client->dev.platform_data;
 
-	dbg_hid("HID probe called for i2c 0x%02x\n", client->addr);
+	printk("LEE: HID probe called for i2c 0x%02x\n", client->addr);
+//	dump_stack();
 
 	if (!client->irq) {
 		dev_err(&client->dev,
@@ -1078,13 +1082,17 @@ static int i2c_hid_probe(struct i2c_client *client,
 	ret = devm_regulator_bulk_get(&client->dev,
 				      ARRAY_SIZE(ihid->pdata.supplies),
 				      ihid->pdata.supplies);
-	if (ret)
+	if (ret) {
+		printk("LEEEEEEEEEEEEEEEEE: %s: Failed to get regulators", __func__);
 		return ret;
+	}
 
 	ret = regulator_bulk_enable(ARRAY_SIZE(ihid->pdata.supplies),
 				    ihid->pdata.supplies);
-	if (ret < 0)
+	if (ret < 0) {
+		printk("LEEEEEEEEEEEEEEEEE: %s: Failed to set regulators", __func__);
 		return ret;
+	}
 
 	if (ihid->pdata.post_power_delay_ms)
 		msleep(ihid->pdata.post_power_delay_ms);

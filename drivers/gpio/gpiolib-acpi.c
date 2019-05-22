@@ -104,8 +104,10 @@ static struct gpio_desc *acpi_get_gpiod(char *path, int pin)
 		return ERR_PTR(-ENODEV);
 
 	chip = gpiochip_find(handle, acpi_gpiochip_find);
-	if (!chip)
+	if (!chip) {
+		printk("LEE: %s: Failed to find GPIO Chip\n", __func__);
 		return ERR_PTR(-EPROBE_DEFER);
+	}
 
 	return gpiochip_get_desc(chip, pin);
 }
@@ -717,8 +719,10 @@ struct gpio_desc *acpi_find_gpio(struct device *dev,
 		desc = acpi_get_gpiod_by_index(adev, propname, idx, &info);
 		if (!IS_ERR(desc))
 			break;
-		if (PTR_ERR(desc) == -EPROBE_DEFER)
+		if (PTR_ERR(desc) == -EPROBE_DEFER) {
+			printk("LEE: %s: Failed to get ACPI GPIOD by index\n", __func__);
 			return ERR_CAST(desc);
+		}
 	}
 
 	/* Then from plain _CRS GPIOs */

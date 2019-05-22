@@ -450,6 +450,9 @@ int geni_se_resources_off(struct geni_se *se)
 {
 	int ret;
 
+	/* LEE: Assume firmware has setup resources correctly */
+	return 0;
+
 	ret = pinctrl_pm_select_sleep_state(se->dev);
 	if (ret)
 		return ret;
@@ -486,6 +489,9 @@ static int geni_se_clks_on(struct geni_se *se)
 int geni_se_resources_on(struct geni_se *se)
 {
 	int ret;
+
+	/* LEE: Assume firmware has setup resources correctly */
+	return 0;
 
 	ret = geni_se_clks_on(se);
 	if (ret)
@@ -569,6 +575,9 @@ int geni_se_clk_freq_match(struct geni_se *se, unsigned long req_freq,
 	unsigned long best_delta;
 	unsigned long new_delta;
 	unsigned int divider;
+
+	printk("LEE: %s: Can't do clocks right now (SPI driver, right?)\n", __func__);
+	return -EINVAL;
 
 	num_clk_levels = geni_se_clk_tbl_get(se, &tbl);
 	if (num_clk_levels < 0)
@@ -728,6 +737,7 @@ static int geni_se_probe(struct platform_device *pdev)
 	if (IS_ERR(wrapper->base))
 		return PTR_ERR(wrapper->base);
 
+/* LEE - Assuming firmware setup clocks correctly
 	wrapper->ahb_clks[0].id = "m-ahb";
 	wrapper->ahb_clks[1].id = "s-ahb";
 	ret = devm_clk_bulk_get(dev, NUM_AHB_CLKS, wrapper->ahb_clks);
@@ -735,7 +745,7 @@ static int geni_se_probe(struct platform_device *pdev)
 		dev_err(dev, "Err getting AHB clks %d\n", ret);
 		return ret;
 	}
-
+*/
 	dev_set_drvdata(dev, wrapper);
 	dev_dbg(dev, "GENI SE Driver probed\n");
 	return devm_of_platform_populate(dev);

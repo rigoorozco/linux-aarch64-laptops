@@ -787,7 +787,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
 	if (status)
 		goto out_free_props;
 
-	dev_dbg(&adap->dev, "client [%s] registered with bus id %s\n",
+	dev_err(&adap->dev, "#########################   LEE: client [%s] registered with bus id %s\n",
 		client->name, dev_name(&client->dev));
 
 	return client;

@@ -1852,6 +1852,7 @@ MODULE_DEVICE_TABLE(of, of_dwc3_match);
 
 static const struct acpi_device_id dwc3_acpi_match[] = {
 	{ ACPI_ID_INTEL_BSW, 0 },
+	{ "QCOM2430", 0 },
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, dwc3_acpi_match);

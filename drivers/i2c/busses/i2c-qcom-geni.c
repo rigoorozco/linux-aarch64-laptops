@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
 
+#include <linux/acpi.h>
 #include <linux/clk.h>
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
@@ -483,12 +484,20 @@ static const struct i2c_algorithm geni_i2c_algo = {
 	.functionality	= geni_i2c_func,
 };
 
+static const struct acpi_device_id geni_i2c_acpi_match[] = {
+	{ "QCOM0220"},
+	{ },
+};
+MODULE_DEVICE_TABLE(acpi, geni_i2c_acpi_match);
+
 static int geni_i2c_probe(struct platform_device *pdev)
 {
 	struct geni_i2c_dev *gi2c;
 	struct resource *res;
 	u32 proto, tx_depth;
 	int ret;
+
+	dev_err(&pdev->dev, "LEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
 
 	gi2c = devm_kzalloc(&pdev->dev, sizeof(*gi2c), GFP_KERNEL);
 	if (!gi2c)
@@ -501,6 +510,7 @@ static int geni_i2c_probe(struct platform_device *pdev)
 	if (IS_ERR(gi2c->se.base))
 		return PTR_ERR(gi2c->se.base);
 
+/* LEE: Assuming firmware setup clocks correctly
 	gi2c->se.clk = devm_clk_get(&pdev->dev, "se");
 	if (IS_ERR(gi2c->se.clk)) {
 		ret = PTR_ERR(gi2c->se.clk);
@@ -515,12 +525,16 @@ static int geni_i2c_probe(struct platform_device *pdev)
 			"Bus frequency not specified, default to 100kHz.\n");
 		gi2c->clk_freq_out = KHZ(100);
 	}
+*/
+//gi2c->clk_freq_out = KHZ(400);
+gi2c->clk_freq_out = KHZ(100);
 
 	gi2c->irq = platform_get_irq(pdev, 0);
 	if (gi2c->irq < 0) {
 		dev_err(&pdev->dev, "IRQ error for i2c-geni\n");
 		return gi2c->irq;
 	}
+	printk("LEE: %s: IRQ: %d\n", __func__, gi2c->irq);
 
 	ret = geni_i2c_clk_map_idx(gi2c);
 	if (ret) {
@@ -529,6 +543,7 @@ static int geni_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	ACPI_COMPANION_SET(&gi2c->adap.dev, ACPI_COMPANION(&pdev->dev));
 	gi2c->adap.algo = &geni_i2c_algo;
 	init_completion(&gi2c->done);
 	spin_lock_init(&gi2c->lock);
@@ -569,7 +584,7 @@ static int geni_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	dev_dbg(&pdev->dev, "i2c fifo/se-dma mode. fifo depth:%d\n", tx_depth);
+	dev_err(&pdev->dev, "i2c fifo/se-dma mode. fifo depth:%d\n", tx_depth);
 
 	gi2c->suspended = 1;
 	pm_runtime_set_suspended(gi2c->se.dev);
@@ -584,6 +599,8 @@ static int geni_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	dev_err(&pdev->dev, "Geni-I2C adaptor successfully added\n");
+	
 	return 0;
 }
 
@@ -660,6 +677,7 @@ static struct platform_driver geni_i2c_driver = {
 		.name = "geni_i2c",
 		.pm = &geni_i2c_pm_ops,
 		.of_match_table = geni_i2c_dt_match,
+		.acpi_match_table = ACPI_PTR(geni_i2c_acpi_match),
 	},
 };
 

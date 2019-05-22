@@ -1166,8 +1166,8 @@ int hid_pidff_init(struct hid_device *hid);
 
 #define dbg_hid(format, arg...)						\
 do {									\
-	if (hid_debug)							\
-		printk(KERN_DEBUG "%s: " format, __FILE__, ##arg);	\
+	if (1)							\
+		printk(KERN_ERR "%s: " format, __FILE__, ##arg);	\
 } while (0)
 
 #define hid_printk(level, hid, fmt, arg...)		\

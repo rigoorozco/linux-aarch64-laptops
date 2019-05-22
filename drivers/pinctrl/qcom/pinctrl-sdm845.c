@@ -3,6 +3,7 @@
  * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/acpi.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -1120,10 +1121,11 @@ static const struct msm_function sdm845_functions[] = {
  * Clients would not be able to request these dummy pin groups.
  */
 static const struct msm_pingroup sdm845_groups[] = {
-	PINGROUP(0, EAST, qup0, _, _, _, _, _, _, _, _, _),
-	PINGROUP(1, EAST, qup0, _, _, _, _, _, _, _, _, _),
-	PINGROUP(2, EAST, qup0, _, _, _, _, _, _, _, _, _),
-	PINGROUP(3, EAST, qup0, _, _, _, _, _, _, _, _, _),
+
+//	PINGROUP(0, EAST, qup0, _, _, _, _, _, _, _, _, _),
+//	PINGROUP(1, EAST, qup0, _, _, _, _, _, _, _, _, _),
+//	PINGROUP(2, EAST, qup0, _, _, _, _, _, _, _, _, _),
+//	PINGROUP(3, EAST, qup0, _, _, _, _, _, _, _, _, _),
 	PINGROUP(4, NORTH, qup9, qdss_cti, _, _, _, _, _, _, _, _),
 	PINGROUP(5, NORTH, qup9, qdss_cti, _, _, _, _, _, _, _, _),
 	PINGROUP(6, NORTH, qup9, _, ddr_pxi0, _, _, _, _, _, _, _),
@@ -1149,6 +1151,7 @@ static const struct msm_pingroup sdm845_groups[] = {
 	PINGROUP(26, SOUTH, cci_async, qdss, _, _, _, _, _, _, _, _),
 	PINGROUP(27, EAST, qup2, qdss, _, _, _, _, _, _, _, _),
 	PINGROUP(28, EAST, qup2, qdss, _, _, _, _, _, _, _, _),
+
 	PINGROUP(29, EAST, qup2, _, phase_flag, qdss, _, _, _, _, _, _),
 	PINGROUP(30, EAST, qup2, phase_flag, qdss, _, _, _, _, _, _, _),
 	PINGROUP(31, NORTH, qup11, qup14, _, _, _, _, _, _, _, _),
@@ -1201,10 +1204,10 @@ static const struct msm_pingroup sdm845_groups[] = {
 	PINGROUP(78, EAST, ter_mi2s, gcc_gp1, _, _, _, _, _, _, _, _),
 	PINGROUP(79, NORTH, sec_mi2s, _, _, qdss, _, _, _, _, _, _),
 	PINGROUP(80, NORTH, sec_mi2s, _, qdss, _, _, _, _, _, _, _),
-	PINGROUP(81, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
-	PINGROUP(82, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
-	PINGROUP(83, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
-	PINGROUP(84, NORTH, qup15, _, _, _, _, _, _, _, _, _),
+//	PINGROUP(81, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
+//	PINGROUP(82, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
+//	PINGROUP(83, NORTH, sec_mi2s, qup15, _, _, _, _, _, _, _, _),
+//	PINGROUP(84, NORTH, qup15, _, _, _, _, _, _, _, _, _),
 	PINGROUP(85, EAST, qup5, _, _, _, _, _, _, _, _, _),
 	PINGROUP(86, EAST, qup5, _, _, _, _, _, _, _, _, _),
 	PINGROUP(87, EAST, qup5, _, _, _, _, _, _, _, _, _),
@@ -1284,13 +1287,38 @@ static const struct msm_pinctrl_soc_data sdm845_pinctrl = {
 	.nfunctions = ARRAY_SIZE(sdm845_functions),
 	.groups = sdm845_groups,
 	.ngroups = ARRAY_SIZE(sdm845_groups),
-	.ngpios = 150,
+	.ngpios = 142,
+};
+
+static const struct msm_pinctrl_soc_data sdm845_acpi_pinctrl = {
+	.pins = sdm845_pins,
+	.npins = ARRAY_SIZE(sdm845_pins),
+	.groups = sdm845_groups,
+	.ngroups = ARRAY_SIZE(sdm845_groups),
+	.ngpios = 142,
 };
 
 static int sdm845_pinctrl_probe(struct platform_device *pdev)
 {
-	return msm_pinctrl_probe(pdev, &sdm845_pinctrl);
+	int ret;
+
+	if (!pdev->dev.of_node) {
+		ret = msm_pinctrl_probe(pdev, &sdm845_pinctrl);
+	} else if (ACPI_HANDLE(&pdev->dev)) {
+		ret = msm_pinctrl_probe(pdev, &sdm845_acpi_pinctrl);
+	} else {
+		dev_err(&pdev->dev, "DT and ACPI disabled\n");
+		return -EINVAL;
+	}
+
+	return ret;
 }
+
+static const struct acpi_device_id sdm845_pinctrl_acpi_match[] = {
+	{ "QCOM0217"},
+	{ },
+};
+MODULE_DEVICE_TABLE(acpi, sdm845_pinctrl_acpi_match);
 
 static const struct of_device_id sdm845_pinctrl_of_match[] = {
 	{ .compatible = "qcom,sdm845-pinctrl", },
@@ -1302,6 +1330,7 @@ static struct platform_driver sdm845_pinctrl_driver = {
 		.name = "sdm845-pinctrl",
 		.pm = &msm_pinctrl_dev_pm_ops,
 		.of_match_table = sdm845_pinctrl_of_match,
+		.acpi_match_table = ACPI_PTR(sdm845_pinctrl_acpi_match),
 	},
 	.probe = sdm845_pinctrl_probe,
 	.remove = msm_pinctrl_remove,
