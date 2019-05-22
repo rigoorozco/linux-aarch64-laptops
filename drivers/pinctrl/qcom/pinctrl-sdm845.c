@@ -1302,7 +1302,7 @@ static int sdm845_pinctrl_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	if (!pdev->dev.of_node) {
+	if (pdev->dev.of_node) {
 		ret = msm_pinctrl_probe(pdev, &sdm845_pinctrl);
 	} else if (ACPI_HANDLE(&pdev->dev)) {
 		ret = msm_pinctrl_probe(pdev, &sdm845_acpi_pinctrl);
