@@ -274,6 +274,8 @@ static irqreturn_t qcom_dwc3_resume_irq(int irq, void *data)
 	struct dwc3_qcom *qcom = data;
 	struct dwc3	*dwc = platform_get_drvdata(qcom->dwc3);
 
+	printk("LEE: %s %s()[%d]: *** IRQ FIRED ***\n", __FILE__, __func__, __LINE__);
+
 	/* If pm_suspended then let pm_resume take care of resuming h/w */
 	if (qcom->pm_suspended)
 		return IRQ_HANDLED;
@@ -434,7 +436,7 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	struct device_node	*np = pdev->dev.of_node, *dwc3_np;
 	struct device		*dev = &pdev->dev;
 	struct dwc3_qcom	*qcom;
-	struct resource		*res, *child_res;
+	struct resource		*res, *parent_res = NULL, *child_res = NULL;
 	int			ret, i;
 	bool			ignore_pipe_clk;
 
@@ -476,13 +478,20 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	printk("LEE: %s %s()[%d]: QCOM: res->start: %llu - res->end: %llu\n",
-	       __FILE__, __func__, __LINE__, res->start, res->end);
-	res->start = res->start + 0xf8800;
-	res->end   = res->start + 0xf8800 + 0x400;
-	printk("LEE: %s %s()[%d]: QCOM: res->start: %llu - res->end: %llu\n",
-	       __FILE__, __func__, __LINE__, res->start, res->end);
-	qcom->qscratch_base = devm_ioremap_resource(dev, res);
+	printk("LEE: %s %s()[%d]: QCOM: res->start: 0x%llx - size: 0x%llx\n",
+	       __FILE__, __func__, __LINE__, res->start, res->end - res->start);
+
+	parent_res = kmemdup(res, sizeof(struct resource), GFP_KERNEL);
+	if (!parent_res)
+		return -ENOMEM;
+
+	parent_res->start = res->start + 0xf8800;
+	parent_res->end = parent_res->start + 0x400;
+
+	printk("LEE: %s %s()[%d]: QCOM: parent_res->start: 0x%llx size: 0x%llx\n",
+	       __FILE__, __func__, __LINE__, parent_res->start, parent_res->end - parent_res->start);
+
+	qcom->qscratch_base = devm_ioremap_resource(dev, parent_res);
 	if (IS_ERR(qcom->qscratch_base)) {
 		dev_err(dev, "failed to map qscratch, err=%d\n", ret);
 		ret = PTR_ERR(qcom->qscratch_base);
@@ -492,13 +501,6 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	ret = dwc3_qcom_setup_irq(pdev);
 	if (ret)
 		goto clk_disable;
-
-	dwc3_np = of_get_child_by_name(np, "dwc3");
-	if (!dwc3_np && !ACPI_HANDLE(dev)) {
-		dev_err(dev, "failed to find dwc3 core child\n");
-		ret = -ENODEV;
-		goto clk_disable;
-	}
 
 	/*
 	 * Disable pipe_clk requirement if specified. Used when dwc3
@@ -510,41 +512,49 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 		dwc3_qcom_select_utmi_clk(qcom);
 
 	if (np) {
+		dwc3_np = of_get_child_by_name(np, "dwc3");
+		if (!dwc3_np && !ACPI_HANDLE(dev)) {
+			dev_err(dev, "failed to find dwc3 core child\n");
+			ret = -ENODEV;
+			goto clk_disable;
+		}
+ 
 		ret = of_platform_populate(np, NULL, NULL, dev);
 		if (ret) {
 			dev_err(dev, "failed to register dwc3 core - %d\n", ret);
 			goto clk_disable;
 		}
-	} else {
-		struct platform_device *child_pdev;
 
-		child_pdev = platform_device_alloc("dwc3", PLATFORM_DEVID_AUTO);
-		if (!child_pdev)
+		qcom->dwc3 = of_find_device_by_node(dwc3_np);
+		if (!qcom->dwc3) {
+			dev_err(&pdev->dev, "failed to get dwc3 platform device\n");
+			ret = -ENODEV;
+			goto depopulate;
+		}
+	} else {
+		qcom->dwc3 = platform_device_alloc("dwc3", PLATFORM_DEVID_AUTO);
+		if (!qcom->dwc3)
 			goto clk_disable;
 
 		child_res = kcalloc(1, sizeof(*child_res), GFP_KERNEL);
 		if (!child_res)
 			goto platform_unalloc;
 
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		child_res->flags = res->flags;
 		child_res->start = res->start;
 		child_res->end = child_res->start + 0xcd00;
 		
-		ret = platform_device_add_resources(child_pdev, child_res, 1);
+		printk("LEE: %s %s()[%d]: QCOM: child_res->start: 0x%llx size: 0x%llx\n",
+		       __FILE__, __func__, __LINE__,
+		       child_res->start, child_res->end - child_res->start);
+
+		ret = platform_device_add_resources(qcom->dwc3, child_res, 1);
 		if (ret)
 			goto platform_unalloc;
 
-		ret = platform_device_add(child_pdev);
+		ret = platform_device_add(qcom->dwc3);
 		if (ret)
 			goto platform_unalloc;
-	}
-
-	qcom->dwc3 = of_find_device_by_node(dwc3_np);
-	if (!qcom->dwc3) {
-		dev_err(&pdev->dev, "failed to get dwc3 platform device\n");
-		ret = -ENODEV;
-		goto depopulate;
 	}
 
 	qcom->mode = usb_get_dr_mode(&qcom->dwc3->dev);
