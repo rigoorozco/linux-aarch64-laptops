@@ -344,8 +344,10 @@ static struct dwc3_event_buffer *dwc3_alloc_one_event_buffer(struct dwc3 *dwc,
 
 	evt->buf	= dma_alloc_coherent(dwc->sysdev, length,
 			&evt->dma, GFP_KERNEL);
-	if (!evt->buf)
+	if (!evt->buf) {
+		printk("LEE: %s %s()[%d]: DMA failed\n", __FILE__, __func__, __LINE__);
 		return ERR_PTR(-ENOMEM);
+	}
 
 	return evt;
 }
@@ -1390,6 +1392,9 @@ static int dwc3_probe(struct platform_device *pdev)
 	void __iomem		*regs;
 
 	printk("LEE: %s: ENTER <-------------------------------\n", __func__);
+
+	printk("LEE: %s %s()[%d]: DMA: 0x%llx\n",
+	       __FILE__, __func__, __LINE__, dev->coherent_dma_mask);
 
 	dwc = devm_kzalloc(dev, sizeof(*dwc), GFP_KERNEL);
 	if (!dwc)

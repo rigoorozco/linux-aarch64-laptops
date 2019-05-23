@@ -274,8 +274,6 @@ static irqreturn_t qcom_dwc3_resume_irq(int irq, void *data)
 	struct dwc3_qcom *qcom = data;
 	struct dwc3	*dwc = platform_get_drvdata(qcom->dwc3);
 
-	printk("LEE: %s %s()[%d]: *** IRQ FIRED ***\n", __FILE__, __func__, __LINE__);
-
 	/* If pm_suspended then let pm_resume take care of resuming h/w */
 	if (qcom->pm_suspended)
 		return IRQ_HANDLED;
@@ -323,7 +321,7 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 	struct dwc3_qcom *qcom = platform_get_drvdata(pdev);
 	int irq, ret;
 
-	irq = dwc3_qcom_get_irq(pdev, "hs_phy_irq", 0);
+	irq = dwc3_qcom_get_irq(pdev, "hs_phy_irq", 1);
 	printk("LEE: %s %s()[%d]: hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		/* Keep wakeup interrupts disabled until suspend */
@@ -339,7 +337,7 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->hs_phy_irq = irq;
 	}
 
-	irq = dwc3_qcom_get_irq(pdev, "dp_hs_phy_irq", 3);
+	irq = dwc3_qcom_get_irq(pdev, "dp_hs_phy_irq", 4);
 	printk("LEE: %s %s()[%d]: dp_hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
@@ -354,7 +352,7 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->dp_hs_phy_irq = irq;
 	}
 
-	irq = dwc3_qcom_get_irq(pdev, "dm_hs_phy_irq", 2);
+	irq = dwc3_qcom_get_irq(pdev, "dm_hs_phy_irq", 3);
 	printk("LEE: %s %s()[%d]: dm_hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
@@ -369,7 +367,7 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->dm_hs_phy_irq = irq;
 	}
 
-	irq = dwc3_qcom_get_irq(pdev, "ss_phy_irq", 1);
+	irq = dwc3_qcom_get_irq(pdev, "ss_phy_irq", 2);
 	printk("LEE: %s %s()[%d]: ss_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
@@ -532,23 +530,52 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 			goto depopulate;
 		}
 	} else {
+		int irq;
+
 		qcom->dwc3 = platform_device_alloc("dwc3", PLATFORM_DEVID_AUTO);
 		if (!qcom->dwc3)
 			goto clk_disable;
 
-		child_res = kcalloc(1, sizeof(*child_res), GFP_KERNEL);
+		qcom->dwc3->dev.parent = dev;
+		qcom->dwc3->dev.type = dev->type;
+		qcom->dwc3->dev.dma_mask = dev->dma_mask;
+		qcom->dwc3->dev.dma_parms = dev->dma_parms;
+		qcom->dwc3->dev.coherent_dma_mask = dev->coherent_dma_mask;
+
+		child_res = kcalloc(2, sizeof(*child_res), GFP_KERNEL);
 		if (!child_res)
 			goto platform_unalloc;
 
-		child_res->flags = res->flags;
-		child_res->start = res->start;
-		child_res->end = child_res->start + 0xcd00;
-		
-		printk("LEE: %s %s()[%d]: QCOM: child_res->start: 0x%llx size: 0x%llx\n",
-		       __FILE__, __func__, __LINE__,
-		       child_res->start, child_res->end - child_res->start);
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		if (!res)
+			printk("LEE: %s %s()[%d]: DIE DIE DIE\n", __FILE__, __func__, __LINE__);
 
-		ret = platform_device_add_resources(qcom->dwc3, child_res, 1);
+		child_res[0].flags = res->flags;
+		child_res[0].start = res->start;
+		child_res[0].end = child_res[0].start + 0xcd00;
+
+		printk("LEE: %s %s()[%d]: QCOM: MEM: child_res[0]->start: 0x%llx size: 0x%llx\n",
+		       __FILE__, __func__, __LINE__,
+		       child_res[0].start, child_res[0].end - child_res[0].start);
+/*
+		res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+		if (!res)
+			printk("LEE: %s %s()[%d]: DIE DIE DIE\n", __FILE__, __func__, __LINE__);
+
+		child_res[1].flags = res->flags;
+		child_res[1].start = child_res[1].end = res->start;
+
+		printk("LEE: %s %s()[%d]: QCOM: IRQ: child_res[1]->start: 0x%llx\n",
+		       __FILE__, __func__, __LINE__, child_res[1].start);
+*/
+		irq = platform_get_irq(pdev, 0);
+		child_res[1].flags = IORESOURCE_IRQ;
+		child_res[1].start = child_res[1].end = irq;
+
+		printk("LEE: %s %s()[%d]: QCOM: IRQ: child_res[1]->start: 0x%llx\n",
+		       __FILE__, __func__, __LINE__, child_res[1].start);
+
+		ret = platform_device_add_resources(qcom->dwc3, child_res, 2);
 		if (ret)
 			goto platform_unalloc;
 
@@ -557,6 +584,9 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 			goto platform_unalloc;
 	}
 
+	printk("LEE: %s %s()[%d]: DMA: 0x%llx\n",
+	       __FILE__, __func__, __LINE__, dev->coherent_dma_mask);
+	
 	qcom->mode = usb_get_dr_mode(&qcom->dwc3->dev);
 	/* enable vbus override for device mode */
 	if (qcom->mode == USB_DR_MODE_PERIPHERAL)

@@ -250,23 +250,32 @@ void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle,
 
 	WARN_ON_ONCE(dev && !dev->coherent_dma_mask);
 
-	if (dma_alloc_from_dev_coherent(dev, size, dma_handle, &cpu_addr))
+	if (dma_alloc_from_dev_coherent(dev, size, dma_handle, &cpu_addr)) {
+		printk("LEE: %s %s()[%d]: 1\n", __FILE__, __func__, __LINE__);
 		return cpu_addr;
+	}
 
 	/* let the implementation decide on the zone to allocate from: */
 	flag &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
 
-	if (!arch_dma_alloc_attrs(&dev))
+	if (!arch_dma_alloc_attrs(&dev)) {
+		printk("LEE: %s %s()[%d]: Failed arch_dma_alloc_attrs\n", __FILE__, __func__, __LINE__);
 		return NULL;
+	}
 
-	if (dma_is_direct(ops))
+	if (dma_is_direct(ops)) {
+		printk("LEE: %s %s()[%d]: Direct\n", __FILE__, __func__, __LINE__);
 		cpu_addr = dma_direct_alloc(dev, size, dma_handle, flag, attrs);
-	else if (ops->alloc)
+	} else if (ops->alloc) {
+		printk("LEE: %s %s()[%d]: Alloc\n", __FILE__, __func__, __LINE__);
 		cpu_addr = ops->alloc(dev, size, dma_handle, flag, attrs);
-	else
+	} else {
+		printk("LEE: %s %s()[%d]: No direct or alloc\n", __FILE__, __func__, __LINE__);
 		return NULL;
+	}
 
 	debug_dma_alloc_coherent(dev, size, *dma_handle, cpu_addr);
+	printk("LEE: %s %s()[%d]: Exit\n", __FILE__, __func__, __LINE__);
 	return cpu_addr;
 }
 EXPORT_SYMBOL(dma_alloc_attrs);
@@ -337,8 +346,12 @@ EXPORT_SYMBOL(dma_set_mask);
 #ifndef CONFIG_ARCH_HAS_DMA_SET_COHERENT_MASK
 int dma_set_coherent_mask(struct device *dev, u64 mask)
 {
-	if (!dma_supported(dev, mask))
+	printk("LEE: %s %s()[%d]: ENTER\n", __FILE__, __func__, __LINE__);
+
+	if (!dma_supported(dev, mask)) {
+		printk("LEE: %s %s()[%d]: DMA NOT SUPPORTED\n", __FILE__, __func__, __LINE__);
 		return -EIO;
+	}
 
 	dma_check_mask(dev, mask);
 	dev->coherent_dma_mask = mask;

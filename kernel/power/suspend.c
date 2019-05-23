@@ -611,6 +611,8 @@ int pm_suspend(suspend_state_t state)
 {
 	int error;
 
+	return -EINVAL;
+
 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
 		return -EINVAL;
 
