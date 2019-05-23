@@ -4,6 +4,7 @@
  * Inspired by dwc3-of-simple.c
  */
 
+#include <linux/acpi.h>
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/clk.h>
@@ -300,12 +301,28 @@ static void dwc3_qcom_select_utmi_clk(struct dwc3_qcom *qcom)
 			  PIPE_UTMI_CLK_DIS);
 }
 
+static int dwc3_qcom_get_irq(struct platform_device *pdev,
+			     const char *name, unsigned int num)
+{
+	if (pdev->dev.of_node) {
+		return platform_get_irq_byname(pdev, name);
+		printk("LEE: %s %s()[%d]: Trying by name: %s\n", __FILE__, __func__, __LINE__, name);
+	} else if (ACPI_HANDLE(&pdev->dev)) {
+		printk("LEE: %s %s()[%d]: Trying by number: %d\n", __FILE__, __func__, __LINE__, num);
+		return platform_get_irq(pdev, num);
+	} else
+		dev_err(&pdev->dev, "Neither ACPI nor DT enabled\n");
+
+	return -EINVAL;		
+}
+
 static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 {
 	struct dwc3_qcom *qcom = platform_get_drvdata(pdev);
 	int irq, ret;
 
-	irq = platform_get_irq_byname(pdev, "hs_phy_irq");
+	irq = dwc3_qcom_get_irq(pdev, "hs_phy_irq", 0);
+	printk("LEE: %s %s()[%d]: hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		/* Keep wakeup interrupts disabled until suspend */
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
@@ -320,7 +337,8 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->hs_phy_irq = irq;
 	}
 
-	irq = platform_get_irq_byname(pdev, "dp_hs_phy_irq");
+	irq = dwc3_qcom_get_irq(pdev, "dp_hs_phy_irq", 3);
+	printk("LEE: %s %s()[%d]: dp_hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
 		ret = devm_request_threaded_irq(qcom->dev, irq, NULL,
@@ -334,7 +352,8 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->dp_hs_phy_irq = irq;
 	}
 
-	irq = platform_get_irq_byname(pdev, "dm_hs_phy_irq");
+	irq = dwc3_qcom_get_irq(pdev, "dm_hs_phy_irq", 2);
+	printk("LEE: %s %s()[%d]: dm_hs_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
 		ret = devm_request_threaded_irq(qcom->dev, irq, NULL,
@@ -348,7 +367,8 @@ static int dwc3_qcom_setup_irq(struct platform_device *pdev)
 		qcom->dm_hs_phy_irq = irq;
 	}
 
-	irq = platform_get_irq_byname(pdev, "ss_phy_irq");
+	irq = dwc3_qcom_get_irq(pdev, "ss_phy_irq", 1);
+	printk("LEE: %s %s()[%d]: ss_phy_irq: %d\n", __FILE__, __func__, __LINE__, irq);
 	if (irq > 0) {
 		irq_set_status_flags(irq, IRQ_NOAUTOEN);
 		ret = devm_request_threaded_irq(qcom->dev, irq, NULL,
@@ -414,9 +434,11 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	struct device_node	*np = pdev->dev.of_node, *dwc3_np;
 	struct device		*dev = &pdev->dev;
 	struct dwc3_qcom	*qcom;
-	struct resource		*res;
+	struct resource		*res, *child_res;
 	int			ret, i;
 	bool			ignore_pipe_clk;
+
+	printk("LEE: %s: ENTER <-------------------------------\n", __func__);
 
 	qcom = devm_kzalloc(&pdev->dev, sizeof(*qcom), GFP_KERNEL);
 	if (!qcom)
@@ -448,12 +470,18 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 
 	ret = dwc3_qcom_clk_init(qcom, of_count_phandle_with_args(np,
 						"clocks", "#clock-cells"));
-	if (ret) {
+	if (ret && !ACPI_HANDLE(dev)) {
 		dev_err(dev, "failed to get clocks\n");
 		goto reset_assert;
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	printk("LEE: %s %s()[%d]: QCOM: res->start: %llu - res->end: %llu\n",
+	       __FILE__, __func__, __LINE__, res->start, res->end);
+	res->start = res->start + 0xf8800;
+	res->end   = res->start + 0xf8800 + 0x400;
+	printk("LEE: %s %s()[%d]: QCOM: res->start: %llu - res->end: %llu\n",
+	       __FILE__, __func__, __LINE__, res->start, res->end);
 	qcom->qscratch_base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(qcom->qscratch_base)) {
 		dev_err(dev, "failed to map qscratch, err=%d\n", ret);
@@ -466,7 +494,7 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 		goto clk_disable;
 
 	dwc3_np = of_get_child_by_name(np, "dwc3");
-	if (!dwc3_np) {
+	if (!dwc3_np && !ACPI_HANDLE(dev)) {
 		dev_err(dev, "failed to find dwc3 core child\n");
 		ret = -ENODEV;
 		goto clk_disable;
@@ -481,10 +509,35 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	if (ignore_pipe_clk)
 		dwc3_qcom_select_utmi_clk(qcom);
 
-	ret = of_platform_populate(np, NULL, NULL, dev);
-	if (ret) {
-		dev_err(dev, "failed to register dwc3 core - %d\n", ret);
-		goto clk_disable;
+	if (np) {
+		ret = of_platform_populate(np, NULL, NULL, dev);
+		if (ret) {
+			dev_err(dev, "failed to register dwc3 core - %d\n", ret);
+			goto clk_disable;
+		}
+	} else {
+		struct platform_device *child_pdev;
+
+		child_pdev = platform_device_alloc("dwc3", PLATFORM_DEVID_AUTO);
+		if (!child_pdev)
+			goto clk_disable;
+
+		child_res = kcalloc(1, sizeof(*child_res), GFP_KERNEL);
+		if (!child_res)
+			goto platform_unalloc;
+
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		child_res->flags = res->flags;
+		child_res->start = res->start;
+		child_res->end = child_res->start + 0xcd00;
+		
+		ret = platform_device_add_resources(child_pdev, child_res, 1);
+		if (ret)
+			goto platform_unalloc;
+
+		ret = platform_device_add(child_pdev);
+		if (ret)
+			goto platform_unalloc;
 	}
 
 	qcom->dwc3 = of_find_device_by_node(dwc3_np);
@@ -495,7 +548,6 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	}
 
 	qcom->mode = usb_get_dr_mode(&qcom->dwc3->dev);
-
 	/* enable vbus override for device mode */
 	if (qcom->mode == USB_DR_MODE_PERIPHERAL)
 		dwc3_qcom_vbus_overrride_enable(qcom, true);
@@ -511,10 +563,19 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	pm_runtime_enable(dev);
 	pm_runtime_forbid(dev);
 
+	printk("LEE: %s: SUCCESS <-------------------------------\n", __func__);
+
 	return 0;
 
 depopulate:
-	of_platform_depopulate(&pdev->dev);
+platform_unalloc:
+	if (child_res)
+		kfree(child_res);
+
+	if (np)
+		of_platform_depopulate(&pdev->dev);
+	else
+		platform_device_put(pdev);
 clk_disable:
 	for (i = qcom->num_clocks - 1; i >= 0; i--) {
 		clk_disable_unprepare(qcom->clks[i]);
@@ -522,6 +583,8 @@ clk_disable:
 	}
 reset_assert:
 	reset_control_assert(qcom->resets);
+
+	printk("LEE: %s: FAILED <-------------------------------\n", __func__);
 
 	return ret;
 }
@@ -601,6 +664,14 @@ static const struct of_device_id dwc3_qcom_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, dwc3_qcom_of_match);
 
+static const struct acpi_device_id dwc3_qcom_acpi_match[] = {
+        { "QCOM2430", 0 },
+        { "QCOM0304", 0 },
+//        { "QCOM0305", 0 },
+	{ },
+};
+MODULE_DEVICE_TABLE(acpi, dwc3_qcom_acpi_match);
+
 static struct platform_driver dwc3_qcom_driver = {
 	.probe		= dwc3_qcom_probe,
 	.remove		= dwc3_qcom_remove,
@@ -608,6 +679,7 @@ static struct platform_driver dwc3_qcom_driver = {
 		.name	= "dwc3-qcom",
 		.pm	= &dwc3_qcom_dev_pm_ops,
 		.of_match_table	= dwc3_qcom_of_match,
+		.acpi_match_table = ACPI_PTR(dwc3_qcom_acpi_match),
 	},
 };
 

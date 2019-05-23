@@ -1389,6 +1389,8 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	void __iomem		*regs;
 
+	printk("LEE: %s: ENTER <-------------------------------\n", __func__);
+
 	dwc = devm_kzalloc(dev, sizeof(*dwc), GFP_KERNEL);
 	if (!dwc)
 		return -ENOMEM;
@@ -1504,6 +1506,8 @@ static int dwc3_probe(struct platform_device *pdev)
 	dwc3_debugfs_init(dwc);
 	pm_runtime_put(dev);
 
+	printk("LEE: %s: SUCCESS <-------------------------------\n", __func__);
+
 	return 0;
 
 err5:
@@ -1530,6 +1534,8 @@ assert_reset:
 	reset_control_assert(dwc->reset);
 put_clks:
 	clk_bulk_put(dwc->num_clks, dwc->clks);
+
+	printk("LEE: %s: FAILED <-------------------------------\n", __func__);
 
 	return ret;
 }
@@ -1852,7 +1858,6 @@ MODULE_DEVICE_TABLE(of, of_dwc3_match);
 
 static const struct acpi_device_id dwc3_acpi_match[] = {
 	{ ACPI_ID_INTEL_BSW, 0 },
-	{ "QCOM2430", 0 },
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, dwc3_acpi_match);
