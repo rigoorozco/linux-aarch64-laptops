@@ -238,17 +238,6 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
-	hid@2c {
-		compatible = "hid-over-i2c";
-		reg = <0x2c>;
-		hid-descr-addr = <0x20>;
-
-		interrupts-extended = <&tlmm 37 IRQ_TYPE_EDGE_RISING>;
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2c2_hid_active>;
-	};
-
 	battery@70 {
 		compatible = "some,battery";
 		reg = <0x70>;
@@ -268,6 +257,17 @@
 
 //		pinctrl-names = "default";
 //		pinctrl-0 = <&i2c2_hid_active>;
+	};
+
+	hid@2c {
+		compatible = "hid-over-i2c";
+		reg = <0x2c>;
+		hid-descr-addr = <0x20>;
+
+		interrupts-extended = <&tlmm 37 IRQ_TYPE_EDGE_RISING>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c2_hid_active>;
 	};
 };
 
