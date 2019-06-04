@@ -1298,7 +1298,7 @@ static const struct msm_pinctrl_soc_data sdm845_acpi_pinctrl = {
 	.groups = sdm845_groups,
 	.ngroups = ARRAY_SIZE(sdm845_groups),
 	.reserved_gpios = sdm845_acpi_reserved_gpios,
-	.ngpios = 150,
+	.ngpios = 151,
 };
 
 static int sdm845_pinctrl_probe(struct platform_device *pdev)
