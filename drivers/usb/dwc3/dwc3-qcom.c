@@ -468,6 +468,11 @@ static const struct acpi_device_id dwc3_qcom_acpi_match[] = {
 };
 MODULE_DEVICE_TABLE(acpi, dwc3_qcom_acpi_match);
 
+static const struct property_entry dwc3_qcom_acpi_properties[] = {
+	PROPERTY_ENTRY_STRING("dr_mode", "host"),
+	{}
+};
+
 static int dwc3_qcom_probe(struct platform_device *pdev)
 {
 	struct device_node	*np = pdev->dev.of_node, *dwc3_np;
@@ -600,6 +605,13 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 		ret = platform_device_add_resources(qcom->dwc3, child_res, 2);
 		if (ret) {
 			dev_err(&pdev->dev, "failed to add resources\n");
+			goto platform_unalloc;
+		}
+
+		ret = platform_device_add_properties(qcom->dwc3,
+						     dwc3_qcom_acpi_properties);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "failed to add properties\n");
 			goto platform_unalloc;
 		}
 
