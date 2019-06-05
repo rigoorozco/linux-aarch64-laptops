@@ -133,11 +133,6 @@ static int ufshcd_populate_vreg(struct device *dev, const char *name,
 	struct ufs_vreg *vreg = NULL;
 	struct device_node *np = dev->of_node;
 
-	if (!np) {
-		dev_err(dev, "%s: non DT initialization\n", __func__);
-		goto out;
-	}
-
 	snprintf(prop_name, MAX_PROP_SIZE, "%s-supply", name);
 	if (!of_parse_phandle(np, prop_name, 0)) {
 		dev_info(dev, "%s: Unable to find %s regulator, assuming enabled\n",
@@ -203,6 +198,12 @@ static int ufshcd_parse_regulator_info(struct ufs_hba *hba)
 	int err;
 	struct device *dev = hba->dev;
 	struct ufs_vreg_info *info = &hba->vreg_info;
+	struct device_node *np = dev->of_node;
+
+	if (!np) {
+		dev_dbg(dev, "%s: non DT initialization\n", __func__);
+		return 0;
+	}
 
 	err = ufshcd_populate_vreg(dev, "vdd-hba", &info->vdd_hba);
 	if (err)
