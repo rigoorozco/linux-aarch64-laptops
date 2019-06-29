@@ -74,7 +74,7 @@ static int dsi_mgr_setup_components(int id)
 	int ret;
 
 	if (!IS_DUAL_DSI()) {
-		ret = msm_dsi_host_register(msm_dsi->host, true);
+		ret = msm_dsi_host_register(msm_dsi->host);
 		if (ret)
 			return ret;
 
@@ -93,14 +93,11 @@ static int dsi_mgr_setup_components(int id)
 		/* Register slave host first, so that slave DSI device
 		 * has a chance to probe, and do not block the master
 		 * DSI device's probe.
-		 * Also, do not check defer for the slave host,
-		 * because only master DSI device adds the panel to global
-		 * panel list. The panel's device is the master DSI device.
 		 */
-		ret = msm_dsi_host_register(slave_link_dsi->host, false);
+		ret = msm_dsi_host_register(slave_link_dsi->host);
 		if (ret)
 			return ret;
-		ret = msm_dsi_host_register(master_link_dsi->host, true);
+		ret = msm_dsi_host_register(master_link_dsi->host);
 		if (ret)
 			return ret;
 
