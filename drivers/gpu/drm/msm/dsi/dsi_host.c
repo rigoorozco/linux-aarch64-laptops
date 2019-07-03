@@ -1840,20 +1840,6 @@ int msm_dsi_host_init(struct msm_dsi *msm_dsi)
 		goto fail;
 	}
 
-	/*
-	 * Make sure we have panel or bridge early, before we start
-	 * touching the hw.  If bootloader enabled the display, we
-	 * want to be sure to keep it running until the bridge/panel
-	 * is probed and we are all ready to go.  Otherwise we'll
-	 * kill the display and then -EPROBE_DEFER
-	 */
-	if (IS_ERR(of_drm_find_panel(msm_host->device_node)) &&
-			!of_drm_find_bridge(msm_host->device_node)) {
-		pr_err("%s: no panel or bridge yet\n", __func__);
-		return -EPROBE_DEFER;
-	}
-
-
 	msm_host->ctrl_base = msm_ioremap(pdev, "dsi_ctrl", "DSI CTRL");
 	if (IS_ERR(msm_host->ctrl_base)) {
 		pr_err("%s: unable to map Dsi ctrl base\n", __func__);
@@ -1974,7 +1960,7 @@ int msm_dsi_host_modeset_init(struct mipi_dsi_host *host,
 	return 0;
 }
 
-int msm_dsi_host_register(struct mipi_dsi_host *host)
+int msm_dsi_host_register(struct mipi_dsi_host *host, bool check_defer)
 {
 	struct msm_dsi_host *msm_host = to_msm_dsi_host(host);
 	int ret;
@@ -1988,6 +1974,20 @@ int msm_dsi_host_register(struct mipi_dsi_host *host)
 			return ret;
 
 		msm_host->registered = true;
+
+		/* If the panel driver has not been probed after host register,
+		 * we should defer the host's probe.
+		 * It makes sure panel is connected when fbcon detects
+		 * connector status and gets the proper display mode to
+		 * create framebuffer.
+		 * Don't try to defer if there is nothing connected to the dsi
+		 * output
+		 */
+		if (check_defer && msm_host->device_node) {
+			if (IS_ERR(of_drm_find_panel(msm_host->device_node)))
+				if (!of_drm_find_bridge(msm_host->device_node))
+					return -EPROBE_DEFER;
+		}
 	}
 
 	return 0;
