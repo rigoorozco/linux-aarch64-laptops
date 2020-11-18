@@ -5785,6 +5785,7 @@ core_initcall(regulator_init);
 
 static int regulator_late_cleanup(struct device *dev, void *data)
 {
+#if 0
 	struct regulator_dev *rdev = dev_to_rdev(dev);
 	const struct regulator_ops *ops = rdev->desc->ops;
 	struct regulation_constraints *c = rdev->constraints;
@@ -5828,6 +5829,7 @@ static int regulator_late_cleanup(struct device *dev, void *data)
 
 unlock:
 	regulator_unlock(rdev);
+#endif
 
 	return 0;
 }
