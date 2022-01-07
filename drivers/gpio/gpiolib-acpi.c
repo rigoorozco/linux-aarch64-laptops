@@ -161,10 +161,7 @@ done:
 
 static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
 {
-	if (!gc->parent)
-		return false;
-
-	return ACPI_HANDLE(gc->parent) == data;
+	return gc->parent && device_match_acpi_handle(gc->parent, data);
 }
 
 /**
