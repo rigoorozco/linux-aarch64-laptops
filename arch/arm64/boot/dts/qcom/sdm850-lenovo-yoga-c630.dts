@@ -124,6 +124,12 @@
 
 		clock-frequency = <19200000>;
 	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&sn65dsi86 1000000>;
+		enable-gpios = <&tlmm 11 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &adsp_pas {
@@ -137,9 +143,12 @@
 		qcom,pmic-id = "a";
 
 		vdd-l2-l8-l17-supply = <&vreg_s3a_1p35>;
+		vdd-l4-l5-supply = <&vreg_s7a_1p025>;
 		vdd-l7-l12-l14-l15-supply = <&vreg_s5a_2p04>;
 
 		vreg_s2a_1p125: smps2 {
+			regulator-min-microvolt = <1100000>;
+			regulator-max-microvolt = <1100000>;
 		};
 
 		vreg_s3a_1p35: smps3 {
@@ -161,6 +170,9 @@
 		};
 
 		vreg_s7a_1p025: smps7 {
+			regulator-min-microvolt = <1028000>;
+			regulator-max-microvolt = <1028000>;
+			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
 		vdd_qusb_hs0:
@@ -443,6 +455,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&sn65dsi86_pin_active>;
 
+		interrupts-extended = <&tlmm 10 IRQ_TYPE_LEVEL_HIGH>;
+
 		enable-gpios = <&tlmm 96 GPIO_ACTIVE_HIGH>;
 
 		vpll-supply = <&vreg_l14a_1p88>;
@@ -452,6 +466,8 @@
 
 		clocks = <&sn65dsi86_refclk>;
 		clock-names = "refclk";
+
+		#pwm-cells = <1>;
 
 		no-hpd;
 		max-brightness = <255>;
