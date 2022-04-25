@@ -365,14 +365,6 @@
 	/* Overwrite pinctrl-0 from sdm845.dtsi */
 	pinctrl-0 = <&qup_i2c3_default &i2c3_hid_active>;
 
-	tsel: hid@15 {
-		compatible = "hid-over-i2c";
-		reg = <0x15>;
-		hid-descr-addr = <0x1>;
-
-		interrupts-extended = <&tlmm 37 IRQ_TYPE_LEVEL_HIGH>;
-	};
-
 	tsc2: hid@2c {
 		compatible = "hid-over-i2c";
 		reg = <0x2c>;
